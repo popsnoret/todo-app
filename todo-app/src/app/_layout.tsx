@@ -4,21 +4,12 @@ import { TodoProvider } from "../context/TodoContext";
 export default function RootLayout() {
   return (
     <TodoProvider>
-      <Stack>
-        <Stack.Screen
-          name="index"
-          options={{ title: "Mina todos" }}
-        />
-        <Stack.Screen
-          name="detail"
-          options={{ title: "Detaljer" }}
-        />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="detail" />
         <Stack.Screen
           name="add"
-          options={{
-            title: "Ny todo",
-            presentation: "modal",
-          }}
+          options={{ presentation: "modal" }}
         />
       </Stack>
     </TodoProvider>

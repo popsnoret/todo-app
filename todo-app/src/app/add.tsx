@@ -8,13 +8,11 @@ const categories: TodoCategory[] = ["Hemma", "Arbete", "Studier", "Personligt", 
 
 const categoryColors: Record<TodoCategory, string> = {
   Hemma: "#B3D9BD",
-  Arbete: "#cfad99",
+  Arbete: "#E5C7B5",
   Studier: "#91D2EB",
   Personligt: "#F3ACAE",
   Övrigt: "#C9B1E8",
 };
-
-const backgroundColor = "#D5E5E5";
 
 function getToday() {
   const date = new Date();
@@ -26,16 +24,29 @@ function getToday() {
 
 export default function AddScreen() {
   const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [date, setDate] = useState(getToday());
+  const [description, setDescription] = useState("");
   const [category, setCategory] = useState<TodoCategory>("Övrigt");
   const { addTodo } = useTodos();
 
-  function handleSave() {
-    if (!title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  const handleSave = () => {
+    if (!title.trim()) {
+      setTitleError("Du verkar ha glömt titel på din uppgift");
       return;
     }
 
-    addTodo(title, date, category);
+    setTitleError("");
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return;
+    }
+
+    addTodo(title.trim(), date, category, description);
+    router.back();
+  };
+
+  function handleCancel() {
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -52,18 +63,44 @@ export default function AddScreen() {
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.heading}>Ny uppgift</Text>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Pressable
+              style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
+              onPress={handleCancel}
+              accessibilityLabel="Tillbaka"
+            >
+              <Text style={styles.backArrow}>‹</Text>
+            </Pressable>
 
-          <Text style={styles.label}>Vad ska du göra?</Text>
+            <Text style={styles.heading}>Ny uppgift</Text>
+          </View>
+
+          <Text style={styles.label}>Vad behöver du göra?</Text>
           <TextInput
             style={styles.input}
             value={title}
             onChangeText={setTitle}
-            placeholder="Fyll i uppgift"
+            placeholder="Fyll i aktivitet"
             placeholderTextColor="#666666"
             testID="todo-input"
             accessibilityLabel="Titel"
+          />
+          {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
+
+          <Text style={styles.label}>Anteckningar</Text>
+          <TextInput
+            style={[styles.input, styles.notesInput]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Lägg till anteckningar..."
+            placeholderTextColor="#666666"
+            multiline
+            textAlignVertical="top"
+            accessibilityLabel="Anteckningar"
           />
 
           <Text style={styles.label}>När?</Text>
@@ -71,13 +108,13 @@ export default function AddScreen() {
             style={styles.input}
             value={date}
             onChangeText={setDate}
-            placeholder="2026-10-21"
+            placeholder="ÅÅÅÅ-MM-DD"
             placeholderTextColor="#666666"
             testID="todo-date"
             accessibilityLabel="Datum"
           />
 
-          <Text style={styles.label}>Kategori</Text>
+          <Text style={styles.label}>Välj kategori</Text>
           <View style={styles.categories}>
             {categories.map((item) => {
               const selected = category === item;
@@ -85,7 +122,12 @@ export default function AddScreen() {
               return (
                 <Pressable
                   key={item}
-                  style={[styles.categoryButton, { backgroundColor: categoryColors[item] }, selected && styles.selectedCategory]}
+                  style={({ pressed }) => [
+                    styles.categoryButton,
+                    { backgroundColor: categoryColors[item] },
+                    selected && styles.selectedCategory,
+                    pressed && styles.categoryPressed,
+                  ]}
                   onPress={() => setCategory(item)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
@@ -97,22 +139,28 @@ export default function AddScreen() {
             })}
           </View>
 
-          <Pressable
-            style={[styles.saveButton, !title.trim() && styles.disabledButton]}
-            onPress={handleSave}
-            disabled={!title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)}
-            testID="save-todo"
-          >
-            <Text style={styles.saveText}>Spara</Text>
-          </Pressable>
+          <View style={styles.actions}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                (!title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)) && styles.disabledButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={handleSave}
+              disabled={!/^\d{4}-\d{2}-\d{2}$/.test(date)}
+              testID="save-todo"
+            >
+              <Text style={styles.saveText}>Lägg till</Text>
+            </Pressable>
 
-          <Pressable
-            style={styles.cancelButton}
-            onPress={() => router.back()}
-            testID="cancel-add"
-          >
-            <Text style={styles.cancelText}>Avbryt</Text>
-          </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelPressed]}
+              onPress={handleCancel}
+              testID="cancel-add"
+            >
+              <Text style={styles.cancelText}>Avbryt</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -125,84 +173,143 @@ const styles = StyleSheet.create({
   },
   screen: {
     flex: 1,
-    backgroundColor,
+    backgroundColor: "#FFFFFF",
   },
   content: {
+    flexGrow: 1,
     paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 40,
+    paddingBottom: 16,
+  },
+  header: {
+    minHeight: 68,
+    paddingTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  backButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 29,
+    borderWidth: 1.5,
+    borderColor: "#222222",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backArrow: {
+    fontSize: 30,
+    lineHeight: 32,
+    marginTop: -3,
+    color: "#111111",
   },
   heading: {
-    fontSize: 25,
+    fontSize: 22,
     fontFamily: "monospace",
     fontWeight: "700",
     color: "#111111",
-    marginBottom: 28,
   },
   label: {
     fontSize: 15,
     fontFamily: "monospace",
     fontWeight: "700",
-    color: "#111111",
-    marginBottom: 8,
-    marginTop: 12,
+    color: "#222222",
+    marginBottom: 7,
+    marginTop: 13,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    minHeight: 44,
+    backgroundColor: "#F1F1F1",
     borderWidth: 1,
-    borderColor: "#111111",
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 13,
+    borderColor: "transparent",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 20,
     fontSize: 16,
     fontFamily: "monospace",
     color: "#111111",
+  },
+  notesInput: {
+    minHeight: 85,
+    paddingTop: 12,
+  },
+  helperText: {
+    backgroundColor: "#F7F7F7",
+    color: "#666666",
+    fontSize: 13,
+    fontFamily: "monospace",
+    padding: 12,
+    borderRadius: 8,
   },
   categories: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    justifyContent: "center",
+    gap: 8,
     marginTop: 4,
-    marginBottom: 28,
+    marginBottom: 16,
   },
   categoryButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 4,
-    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 22,
+    borderWidth: 1.5,
     borderColor: "transparent",
   },
   selectedCategory: {
     borderColor: "#111111",
-    borderWidth: 2,
+  },
+  categoryPressed: {
+    opacity: 0.75,
   },
   categoryText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "monospace",
     color: "#111111",
   },
+  actions: {
+    marginTop: "auto",
+    paddingTop: 8,
+    gap: 6,
+  },
   saveButton: {
-    backgroundColor: "#111111",
-    paddingVertical: 15,
+    minHeight: 52,
+    backgroundColor: "#E8E8E8",
+    borderWidth: 1.2,
+    borderColor: "#222222",
+    paddingVertical: 14,
     alignItems: "center",
-    borderRadius: 4,
+    justifyContent: "center",
+    borderRadius: 15,
   },
   disabledButton: {
-    opacity: 0.45,
+    opacity: 0.5,
   },
   saveText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: "monospace",
-    fontWeight: "700",
-  },
-  cancelButton: {
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  cancelText: {
     color: "#111111",
     fontSize: 15,
     fontFamily: "monospace",
+    fontWeight: "700",
+  },
+  buttonPressed: {
+    opacity: 0.7,
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelPressed: {
+    opacity: 0.55,
+  },
+  cancelText: {
+    color: "#555555",
+    fontSize: 14,
+    fontFamily: "monospace",
+  },
+  errorText: {
+    color: "#D9534F",
+    fontSize: 13,
+    marginTop: 5,
   },
 });

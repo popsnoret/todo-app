@@ -13,7 +13,7 @@ export type Todo = {
 
 type TodoContextType = {
   todos: Todo[];
-  addTodo: (title: string, date: string, category: TodoCategory) => void;
+  addTodo: (title: string, date: string, category: TodoCategory, description?: string) => void;
   updateTodo: (id: string, title: string, description: string, date: string, category: TodoCategory) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
@@ -110,7 +110,7 @@ function createInitialTodos(): Todo[] {
 export function TodoProvider({ children }: { children: ReactNode }) {
   const [todos, setTodos] = useState<Todo[]>(createInitialTodos);
 
-  function addTodo(title: string, date: string, category: TodoCategory) {
+  function addTodo(title: string, date: string, category: TodoCategory, description = "") {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
 
@@ -119,7 +119,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       {
         id: `${Date.now()}-${Math.random()}`,
         title: trimmedTitle,
-        description: "",
+        description: description.trim(),
         date,
         category,
         completed: false,

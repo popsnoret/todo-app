@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable } from "react-native";
+import { StyleSheet, Text, View, FlatList, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useTodos } from "../context/TodoContext";
 
 const colors = {
-  background: "#D5E5E5",
-  text: "#111111",
+  background: "#FFFFFF",
+  text: "#000000",
+  muted: "#45504F",
+  line: "#222222",
 };
 
 const taskColors: Record<string, string> = {
   Hemma: "#B3D9BD",
-  Arbete: "#cfad99",
+  Arbete: "#E5C7B5",
   Studier: "#91D2EB",
   Personligt: "#F3ACAE",
   Övrigt: "#C9B1E8",
@@ -59,6 +61,7 @@ function getDayLabel(dateString: string, today: string, tomorrow: string) {
 export default function HomeScreen() {
   const { todos, toggleTodo } = useTodos();
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
+  const [isHovered, setIsHovered] = useState(false);
 
   const todayDate = new Date();
   const today = getDateString(todayDate);
@@ -70,10 +73,7 @@ export default function HomeScreen() {
   const groupedTodos = [...todos]
     .sort((a, b) => a.date.localeCompare(b.date))
     .reduce<Record<string, typeof todos>>((groups, todo) => {
-      if (!groups[todo.date]) {
-        groups[todo.date] = [];
-      }
-
+      if (!groups[todo.date]) groups[todo.date] = [];
       groups[todo.date].push(todo);
       return groups;
     }, {});
@@ -81,10 +81,7 @@ export default function HomeScreen() {
   const dates = [...new Set([...getNextThreeDays(), ...Object.keys(groupedTodos)])].sort();
 
   function openTodo(id: string) {
-    router.push({
-      pathname: "/detail",
-      params: { id },
-    });
+    router.push({ pathname: "/detail", params: { id } });
   }
 
   return (
@@ -93,27 +90,32 @@ export default function HomeScreen() {
       testID="home-screen"
     >
       <View style={styles.header}>
-        <Text style={styles.appTitle}>Att göra</Text>
+        <View style={styles.headerSpacer} />
 
         <Pressable
-          style={styles.addButton}
+          style={({ pressed }) => [styles.addButton, isHovered && styles.addButtonHovered, pressed && styles.addButtonPressed]}
           onPress={() => router.push("/add")}
+          onHoverIn={() => setIsHovered(true)}
+          onHoverOut={() => setIsHovered(false)}
           accessibilityLabel="Lägg till uppgift"
           testID="add-todo"
         >
-          <Text style={styles.plus}>+</Text>
+          <Text style={[styles.plus, isHovered && styles.plusHovered]}>+</Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
-        {dates.map((date) => {
+      <FlatList
+        data={dates}
+        keyExtractor={(date) => date}
+        contentContainerStyle={styles.list}
+        renderItem={({ item: date }) => {
           const dayTodos = groupedTodos[date] ?? [];
           const activeTodos = dayTodos.filter((todo) => !todo.completed);
           const completedTodos = dayTodos.filter((todo) => todo.completed);
           const isExpanded = expandedDays[date] ?? false;
 
           return (
-            <View key={date}>
+            <View>
               <View style={styles.dayHeader}>
                 <Text style={styles.dayTitle}>{getDayLabel(date, today, tomorrow)}</Text>
                 <Text style={styles.date}>{formatDate(date)}</Text>
@@ -209,8 +211,8 @@ export default function HomeScreen() {
               )}
             </View>
           );
-        })}
-      </ScrollView>
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -225,76 +227,89 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     borderBottomWidth: 2,
-    borderBottomColor: colors.text,
+    borderBottomColor: colors.line,
   },
-  appTitle: {
-    fontSize: 25,
-    fontFamily: "monospace",
-    fontWeight: "700",
-    color: colors.text,
+  headerSpacer: {
+    flex: 1,
   },
   addButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 22,
-    borderWidth: 1,
+    width: 50,
+    height: 50,
+    borderRadius: 29,
+    borderWidth: 1.5,
     borderColor: colors.text,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
+    transitionDuration: "150ms",
+  },
+  addButtonHovered: {
+    backgroundColor: "#222222",
+    borderColor: "#222222",
+  },
+  addButtonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
   },
   plus: {
-    fontSize: 27,
-    lineHeight: 30,
+    fontSize: 38,
+    lineHeight: 42,
     color: colors.text,
+    textAlign: "center",
+    includeFontPadding: false,
+    marginTop: -3,
+  },
+  plusHovered: {
+    color: "#FFFFFF",
   },
   list: {
-    paddingBottom: 24,
+    paddingBottom: 28,
   },
   dayHeader: {
-    minHeight: 70,
+    minHeight: 76,
     paddingHorizontal: 36,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   dayTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontFamily: "monospace",
     fontWeight: "700",
     color: colors.text,
   },
   date: {
+    maxWidth: "55%",
     fontSize: 15,
     textAlign: "right",
-    lineHeight: 20,
+    lineHeight: 21,
     color: colors.text,
     textTransform: "capitalize",
   },
   taskRow: {
-    minHeight: 42,
+    minHeight: 48,
     paddingLeft: 38,
     paddingRight: 28,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   checkboxButton: {
     minWidth: 24,
-    minHeight: 42,
+    minHeight: 46,
     alignItems: "center",
     justifyContent: "center",
   },
   titlePressable: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 46,
     justifyContent: "center",
   },
   checkbox: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
     borderColor: colors.text,
@@ -308,28 +323,28 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   taskTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "monospace",
     color: colors.text,
   },
   completedText: {
     textDecorationLine: "line-through",
-    color: "#45504F",
+    color: colors.muted,
   },
   completedSection: {
-    marginTop: 4,
+    marginTop: 6,
   },
   completedHeader: {
-    minHeight: 36,
+    minHeight: 40,
     paddingHorizontal: 38,
     justifyContent: "center",
     borderTopWidth: 1,
-    borderTopColor: "#45504F",
+    borderTopColor: "#D8D8D8",
   },
   completedHeaderText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "monospace",
-    color: "#45504F",
+    color: colors.muted,
   },
   completedRow: {
     opacity: 0.8,
