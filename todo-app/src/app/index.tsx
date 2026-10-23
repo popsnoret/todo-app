@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    minHeight: 92,
+    minHeight: 62,
     paddingHorizontal: 36,
     flexDirection: "row",
     alignItems: "center",
