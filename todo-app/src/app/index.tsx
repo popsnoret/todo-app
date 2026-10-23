@@ -228,8 +228,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    borderBottomWidth: 2,
-    borderBottomColor: colors.line,
   },
   headerSpacer: {
     flex: 1,
