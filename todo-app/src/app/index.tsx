@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Text, View, FlatList, Pressable } from "react-native";
+import { StyleSheet, Text, View, FlatList, SectionList, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useTodos } from "../context/TodoContext";
@@ -60,8 +60,11 @@ function getDayLabel(dateString: string, today: string, tomorrow: string) {
 
 export default function HomeScreen() {
   const { todos, toggleTodo } = useTodos();
-  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
   const [isHovered, setIsHovered] = useState(false);
+  const [completedExpanded, setCompletedExpanded] = useState(false);
+
+  const activeTodos = todos.filter((todo) => !todo.completed);
+  const completedTodos = todos.filter((todo) => todo.completed);
 
   const todayDate = new Date();
   const today = getDateString(todayDate);
@@ -70,7 +73,7 @@ export default function HomeScreen() {
   tomorrowDate.setDate(todayDate.getDate() + 1);
   const tomorrow = getDateString(tomorrowDate);
 
-  const groupedTodos = [...todos]
+  const groupedTodos = [...activeTodos]
     .sort((a, b) => a.date.localeCompare(b.date))
     .reduce<Record<string, typeof todos>>((groups, todo) => {
       if (!groups[todo.date]) groups[todo.date] = [];
@@ -98,6 +101,7 @@ export default function HomeScreen() {
           onHoverIn={() => setIsHovered(true)}
           onHoverOut={() => setIsHovered(false)}
           accessibilityLabel="Lägg till uppgift"
+          accessibilityRole="button"
           testID="add-todo"
         >
           <Text style={[styles.plus, isHovered && styles.plusHovered]}>+</Text>
@@ -105,14 +109,12 @@ export default function HomeScreen() {
       </View>
 
       <FlatList
+        style={styles.activeList}
         data={dates}
         keyExtractor={(date) => date}
         contentContainerStyle={styles.list}
         renderItem={({ item: date }) => {
           const dayTodos = groupedTodos[date] ?? [];
-          const activeTodos = dayTodos.filter((todo) => !todo.completed);
-          const completedTodos = dayTodos.filter((todo) => todo.completed);
-          const isExpanded = expandedDays[date] ?? false;
 
           return (
             <View>
@@ -121,7 +123,7 @@ export default function HomeScreen() {
                 <Text style={styles.date}>{formatDate(date)}</Text>
               </View>
 
-              {activeTodos.map((todo) => (
+              {dayTodos.map((todo) => (
                 <View
                   key={todo.id}
                   style={[
@@ -153,66 +155,70 @@ export default function HomeScreen() {
                   </Pressable>
                 </View>
               ))}
-
-              {completedTodos.length > 0 && (
-                <View style={styles.completedSection}>
-                  <Pressable
-                    style={styles.completedHeader}
-                    onPress={() =>
-                      setExpandedDays((current) => ({
-                        ...current,
-                        [date]: !isExpanded,
-                      }))
-                    }
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: isExpanded }}
-                  >
-                    <Text style={styles.completedHeaderText}>
-                      {isExpanded ? "▾" : "▸"} Färdiga ({completedTodos.length})
-                    </Text>
-                  </Pressable>
-
-                  {isExpanded &&
-                    completedTodos.map((todo) => (
-                      <View
-                        key={todo.id}
-                        style={[
-                          styles.taskRow,
-                          styles.completedRow,
-                          {
-                            backgroundColor: taskColors[todo.category] ?? taskColors.Övrigt,
-                          },
-                        ]}
-                      >
-                        <Pressable
-                          style={styles.checkboxButton}
-                          onPress={() => toggleTodo(todo.id)}
-                          accessibilityRole="checkbox"
-                          accessibilityLabel={`Markera ${todo.title} som ej klar`}
-                          accessibilityState={{ checked: true }}
-                        >
-                          <View style={styles.checkbox}>
-                            <Text style={styles.checkmark}>✓</Text>
-                          </View>
-                        </Pressable>
-
-                        <Pressable
-                          style={styles.titlePressable}
-                          onPress={() => openTodo(todo.id)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Visa ${todo.title}`}
-                          testID="todo-row"
-                        >
-                          <Text style={[styles.taskTitle, styles.completedText]}>{todo.title}</Text>
-                        </Pressable>
-                      </View>
-                    ))}
-                </View>
-              )}
             </View>
           );
         }}
       />
+
+      <View style={styles.completedSection}>
+        <Pressable
+          style={styles.completedHeader}
+          onPress={() => setCompletedExpanded((current) => !current)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: completedExpanded }}
+        >
+          <Text style={styles.completedHeaderText}>
+            {completedExpanded ? "▾" : "▸"} Färdiga ({completedTodos.length})
+          </Text>
+        </Pressable>
+
+        {completedExpanded && (
+          <SectionList
+            style={styles.completedList}
+            nestedScrollEnabled
+            sections={[
+              {
+                title: "Färdiga",
+                data: completedTodos,
+              },
+            ]}
+            keyExtractor={(todo) => todo.id}
+            renderSectionHeader={() => null}
+            renderItem={({ item: todo }) => (
+              <View
+                style={[
+                  styles.taskRow,
+                  styles.completedRow,
+                  {
+                    backgroundColor: taskColors[todo.category] ?? taskColors.Övrigt,
+                  },
+                ]}
+              >
+                <Pressable
+                  style={styles.checkboxButton}
+                  onPress={() => toggleTodo(todo.id)}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={`Markera ${todo.title} som ej klar`}
+                  accessibilityState={{ checked: true }}
+                >
+                  <View style={styles.checkbox}>
+                    <Text style={styles.checkmark}>✓</Text>
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  style={styles.titlePressable}
+                  onPress={() => openTodo(todo.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Visa ${todo.title}`}
+                >
+                  <Text style={[styles.taskTitle, styles.completedText]}>{todo.title}</Text>
+                </Pressable>
+              </View>
+            )}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -264,6 +270,9 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 28,
+  },
+  activeList: {
+    flex: 1,
   },
   dayHeader: {
     minHeight: 76,
@@ -330,6 +339,8 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   completedSection: {
+    flexShrink: 0,
+    backgroundColor: colors.background,
     marginTop: 6,
   },
   completedHeader: {
@@ -346,5 +357,8 @@ const styles = StyleSheet.create({
   },
   completedRow: {
     opacity: 0.8,
+  },
+  completedList: {
+    maxHeight: 250,
   },
 });

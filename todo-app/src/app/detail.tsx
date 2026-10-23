@@ -14,7 +14,7 @@ const COLORS = {
   green: "#B3D9BD",
   brown: "#E5C7B5",
   blue: "#91D2EB",
-  red: "#E9A8AA",
+  red: "#F3ACAE",
   purple: "#C9B1E8",
 };
 
@@ -52,7 +52,6 @@ export default function DetailScreen() {
 
   const [title, setTitle] = useState(todo?.title ?? "");
   const [titleError, setTitleError] = useState("");
-
   const [description, setDescription] = useState(todo?.description ?? "");
   const [date, setDate] = useState(todo?.date ?? "");
   const [category, setCategory] = useState<TodoCategory>(todo?.category ?? "Övrigt");
@@ -76,7 +75,7 @@ export default function DetailScreen() {
       >
         <Text style={styles.appTitle}>Uppgiften kunde inte hittas.</Text>
         <Pressable
-          style={styles.button}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           onPress={goBack}
         >
           <Text style={styles.buttonText}>Tillbaka</Text>
@@ -107,6 +106,7 @@ export default function DetailScreen() {
     deleteTodo(todo.id);
     goBack();
   }
+
   return (
     <SafeAreaView
       style={styles.screen}
@@ -114,14 +114,18 @@ export default function DetailScreen() {
     >
       <View style={styles.header}>
         <Pressable
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
           onPress={goBack}
           accessibilityLabel="Tillbaka"
+          accessibilityRole="button"
         >
           <Text style={styles.backArrow}>‹</Text>
         </Pressable>
 
         <Text style={styles.appTitle}>Redigera</Text>
+      </View>
+      <View style={styles.statusRow}>
+        <Text style={[styles.statusBadge, todo.completed ? styles.completedBadge : styles.pendingBadge]}>{todo.completed ? "KLAR" : "EJ KLAR"}</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -129,6 +133,7 @@ export default function DetailScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
+          style={styles.flex}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
@@ -142,6 +147,7 @@ export default function DetailScreen() {
             testID="todo-title"
             accessibilityLabel="Uppgiftens namn"
           />
+
           {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
 
           <View style={styles.notesHeader}>
@@ -173,7 +179,7 @@ export default function DetailScreen() {
           <Pressable
             style={styles.input}
             onPress={() => {
-              setSelectedDate(new Date(`${date}T12:00:00`));
+              setSelectedDate(new Date(`${date || formatDate(new Date())}T12:00:00`));
               setShowDatePicker(true);
             }}
             testID="todo-date"
@@ -232,10 +238,10 @@ export default function DetailScreen() {
                   style={({ pressed }) => [
                     styles.categoryOption,
                     {
-                      backgroundColor: selected ? categoryColors[item] : COLORS.white,
+                      backgroundColor: selected ? categoryColors[item] : `${categoryColors[item]}30`,
+                      borderColor: categoryColors[item],
                     },
-                    selected && styles.selectedCategory,
-                    pressed && styles.pressed,
+                    pressed && styles.categoryPressed,
                   ]}
                   onPress={() => setCategory(item)}
                   accessibilityRole="button"
@@ -247,33 +253,40 @@ export default function DetailScreen() {
               );
             })}
           </View>
-
-          <View style={styles.actions}>
-            <Pressable
-              style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-              onPress={saveChanges}
-              testID="save-todo-button"
-            >
-              <Text style={styles.buttonText}>Spara ändringar</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.statusButton, pressed && styles.pressed]}
-              onPress={() => toggleTodo(todo.id)}
-              testID="toggle-todo"
-            >
-              <Text style={styles.buttonText}>{todo.completed ? "Markera som ej klar" : "Markera som klar"}</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-              onPress={handleDelete}
-              testID="delete-todo"
-            >
-              <Text style={styles.buttonText}>Ta bort uppgift</Text>
-            </Pressable>
-          </View>
         </ScrollView>
+
+        {/* Knapparna ligger fast längst ner */}
+        <View style={styles.actions}>
+          <Pressable
+            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+            onPress={saveChanges}
+            testID="save-todo-button"
+          >
+            <Text style={styles.buttonText}>Spara ändringar</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.statusButton, pressed && styles.buttonPressed]}
+            onPress={() => toggleTodo(todo.id)}
+            testID="toggle-todo"
+          >
+            <Text style={styles.buttonText}>{todo.completed ? "Markera som ej klar" : "Markera som klar"}</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.deleteButton, pressed && styles.buttonPressed]}
+            onPress={handleDelete}
+            testID="delete-todo"
+          >
+            <Text style={styles.buttonText}>Ta bort uppgift</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelPressed]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.cancelText}>Avbryt</Text>
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -285,7 +298,7 @@ const styles = StyleSheet.create({
   },
   screen: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: COLORS.background,
   },
   header: {
     minHeight: 68,
@@ -299,9 +312,10 @@ const styles = StyleSheet.create({
   backButton: {
     width: 50,
     height: 50,
-    borderRadius: 29,
+    borderRadius: 25,
     borderWidth: 1.5,
     borderColor: "#222222",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -310,6 +324,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     color: "#111111",
     marginTop: -3,
+    textAlign: "center",
   },
   appTitle: {
     fontSize: 22,
@@ -320,7 +335,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 28,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   taskHeading: {
     fontSize: 24,
@@ -342,12 +357,12 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: "#F1F1F1",
+    backgroundColor: COLORS.field,
     paddingHorizontal: 15,
     paddingVertical: 10,
     fontSize: 16,
     fontFamily: "monospace",
-    color: "#111111",
+    color: COLORS.text,
   },
   notesHeader: {
     flexDirection: "row",
@@ -375,59 +390,78 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 20,
     borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: "#222222",
-  },
-  selectedCategory: {
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   categoryOptionText: {
     fontSize: 13,
     fontFamily: "monospace",
-    color: "#111111",
+    color: COLORS.text,
+  },
+  categoryPressed: {
+    opacity: 0.75,
   },
   actions: {
+    paddingHorizontal: 28,
     paddingTop: 8,
-    gap: 8,
+    paddingBottom: 0,
+    gap: 6,
+    backgroundColor: COLORS.background,
   },
   button: {
-    minHeight: 46,
-    borderRadius: 15,
+    minHeight: 52,
+    backgroundColor: "rgba(232, 232, 232, 0.65)",
     borderWidth: 1.2,
-    borderColor: "#222222",
-    backgroundColor: "#E8E8E8",
+    borderColor: "rgba(34, 34, 34, 0.35)",
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 12,
+    borderRadius: 15,
   },
   statusButton: {
-    minHeight: 46,
-    borderRadius: 15,
+    minHeight: 52,
+    backgroundColor: "rgba(179, 217, 189, 0.55)",
     borderWidth: 1.2,
-    borderColor: "#222222",
-    backgroundColor: "#B3D9BD",
+    borderColor: "rgba(34, 34, 34, 0.35)",
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 12,
+    borderRadius: 15,
   },
   deleteButton: {
-    minHeight: 46,
-    borderRadius: 15,
+    minHeight: 52,
+    backgroundColor: "rgba(243, 172, 174, 0.55)",
     borderWidth: 1.2,
-    borderColor: "#222222",
-    backgroundColor: "#E9A8AA",
+    borderColor: "rgba(34, 34, 34, 0.35)",
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 12,
+    borderRadius: 15,
   },
   buttonText: {
-    fontSize: 14,
+    color: COLORS.text,
+    fontSize: 15,
     fontFamily: "monospace",
     fontWeight: "700",
-    color: "#111111",
+    textAlign: "center",
   },
-  pressed: {
+  cancelButton: {
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelPressed: {
+    opacity: 0.55,
+  },
+  cancelText: {
+    color: "#555555",
+    fontSize: 14,
+    fontFamily: "monospace",
+  },
+  buttonPressed: {
     opacity: 0.7,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   errorText: {
     color: "#D9534F",
@@ -437,7 +471,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontFamily: "monospace",
-    color: "#111111",
+    color: COLORS.text,
   },
   dateModalOverlay: {
     flex: 1,
@@ -449,7 +483,7 @@ const styles = StyleSheet.create({
   dateModal: {
     width: "100%",
     maxWidth: 340,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: COLORS.white,
     borderRadius: 18,
     padding: 20,
     alignItems: "center",
@@ -458,7 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "monospace",
     fontWeight: "700",
-    color: "#111111",
+    color: COLORS.text,
     marginBottom: 8,
   },
   dateModalActions: {
@@ -479,6 +513,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "monospace",
     fontWeight: "700",
-    color: "#111111",
+    color: COLORS.text,
+  },
+  statusRow: {
+    paddingHorizontal: 28,
+    alignItems: "flex-end",
+    marginBottom: 4,
+  },
+
+  statusBadge: {
+    overflow: "hidden",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    fontSize: 11,
+    fontFamily: "monospace",
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+
+  completedBadge: {
+    backgroundColor: "#B3D9BD",
+    color: "#234F32",
+  },
+
+  pendingBadge: {
+    backgroundColor: "#EEEEEE",
+    color: "#444444",
   },
 });
