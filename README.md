@@ -4,11 +4,11 @@ A todo app built with React Native, Expo and TypeScript.
 
 ## Screenshots
 
-![Home](todo-app/screenshots/home.jpeg)
-
-![Add Todo](todo-app/screenshots/add.jpeg)
-
-![Todo Details](todo-app/screenshots/edit.jpeg)
+<p align="center">
+  <img src="todo-app/screenshots/home.jpeg" width="250" alt="Home" />
+  <img src="todo-app/screenshots/add.jpeg" width="250" alt="Add Todo" />
+  <img src="todo-app/screenshots/edit.jpeg" width="250" alt="Todo Details" />
+</p>
 
 ## Features
 
