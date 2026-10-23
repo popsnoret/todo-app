@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Modal } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTodos, type TodoCategory } from "../context/TodoContext";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const categories: TodoCategory[] = ["Hemma", "Arbete", "Studier", "Personligt", "Övrigt"];
 
@@ -22,6 +23,13 @@ function getToday() {
   return `${year}-${month}-${day}`;
 }
 
+function formatDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function AddScreen() {
   const [title, setTitle] = useState("");
   const [titleError, setTitleError] = useState("");
@@ -29,6 +37,8 @@ export default function AddScreen() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<TodoCategory>("Övrigt");
   const { addTodo } = useTodos();
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date(`${date}T12:00:00`));
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -39,6 +49,10 @@ export default function AddScreen() {
     setTitleError("");
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return;
+    }
+
+    if (date < getToday()) {
       return;
     }
 
@@ -104,15 +118,56 @@ export default function AddScreen() {
           />
 
           <Text style={styles.label}>När?</Text>
-          <TextInput
+          <Pressable
             style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="ÅÅÅÅ-MM-DD"
-            placeholderTextColor="#666666"
+            onPress={() => {
+              setSelectedDate(new Date(`${date}T12:00:00`));
+              setShowDatePicker(true);
+            }}
             testID="todo-date"
-            accessibilityLabel="Datum"
-          />
+            accessibilityLabel="Välj datum"
+            accessibilityRole="button"
+          >
+            <Text style={styles.dateText}>{date}</Text>
+          </Pressable>
+
+          <Modal
+            visible={showDatePicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <View style={styles.dateModalOverlay}>
+              <View style={styles.dateModal}>
+                <Text style={styles.dateModalTitle}>Välj datum</Text>
+
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="spinner"
+                  minimumDate={new Date()}
+                  onChange={(_, newDate) => {
+                    if (newDate) setSelectedDate(newDate);
+                  }}
+                />
+
+                <View style={styles.dateModalActions}>
+                  <Pressable onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.dateCancel}>Avbryt</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => {
+                      setDate(formatDate(selectedDate));
+                      setShowDatePicker(false);
+                    }}
+                  >
+                    <Text style={styles.dateConfirm}>Klar</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           <Text style={styles.label}>Välj kategori</Text>
           <View style={styles.categories}>
@@ -311,5 +366,52 @@ const styles = StyleSheet.create({
     color: "#D9534F",
     fontSize: 13,
     marginTop: 5,
+  },
+  dateText: {
+    fontSize: 16,
+    fontFamily: "monospace",
+    color: "#111111",
+  },
+  dateModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  dateModal: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 20,
+    alignItems: "center",
+  },
+  dateModalTitle: {
+    fontSize: 18,
+    fontFamily: "monospace",
+    fontWeight: "700",
+    color: "#111111",
+    marginBottom: 8,
+  },
+  dateModalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 28,
+    width: "100%",
+    marginTop: 12,
+    paddingHorizontal: 8,
+  },
+  dateCancel: {
+    fontSize: 15,
+    fontFamily: "monospace",
+    color: "#555555",
+  },
+  dateConfirm: {
+    fontSize: 15,
+    fontFamily: "monospace",
+    fontWeight: "700",
+    color: "#111111",
   },
 });
