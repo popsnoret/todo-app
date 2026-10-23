@@ -145,6 +145,7 @@ export default function AddScreen() {
                   value={selectedDate}
                   mode="date"
                   display="spinner"
+                  themeVariant="light"
                   minimumDate={new Date()}
                   onChange={(_, newDate) => {
                     if (newDate) setSelectedDate(newDate);

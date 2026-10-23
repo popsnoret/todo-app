@@ -203,6 +203,7 @@ export default function DetailScreen() {
                   value={selectedDate}
                   mode="date"
                   display="spinner"
+                  themeVariant="light"
                   minimumDate={new Date()}
                   onChange={(_, newDate) => {
                     if (newDate) setSelectedDate(newDate);
