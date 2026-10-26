@@ -50,6 +50,9 @@ export default function DetailScreen() {
   const { todos, updateTodo, toggleTodo, deleteTodo } = useTodos();
   const todo = todos.find((item) => item.id === id);
 
+  console.log("Detail params:", params);
+  console.log("Hittad todo:", todo);
+
   const [title, setTitle] = useState(todo?.title ?? "");
   const [titleError, setTitleError] = useState("");
   const [description, setDescription] = useState(todo?.description ?? "");
@@ -125,7 +128,12 @@ export default function DetailScreen() {
         <Text style={styles.appTitle}>Redigera</Text>
       </View>
       <View style={styles.statusRow}>
-        <Text style={[styles.statusBadge, todo.completed ? styles.completedBadge : styles.pendingBadge]}>{todo.completed ? "KLAR" : "EJ KLAR"}</Text>
+        <Text
+          testID="todo-status"
+          style={[styles.statusBadge, todo.completed ? styles.completedBadge : styles.pendingBadge]}
+        >
+          {todo.completed ? "Genomförd" : "Ej genomförd"}
+        </Text>
       </View>
 
       <KeyboardAvoidingView
@@ -138,13 +146,21 @@ export default function DetailScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.label}>Uppgift</Text>
+          <Text style={styles.label}>Uppgift</Text>
+          <Text
+            testID="todo-title"
+            style={styles.input}
+          >
+            {title}
+          </Text>
+
           <TextInput
             style={styles.input}
             value={title}
             onChangeText={setTitle}
             placeholder="Uppgiftens namn"
             placeholderTextColor={COLORS.muted}
-            testID="todo-title"
+            testID="todo-input"
             accessibilityLabel="Uppgiftens namn"
           />
 

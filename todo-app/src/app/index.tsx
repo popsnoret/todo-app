@@ -61,7 +61,7 @@ function getDayLabel(dateString: string, today: string, tomorrow: string) {
 export default function HomeScreen() {
   const { todos, toggleTodo } = useTodos();
   const [isHovered, setIsHovered] = useState(false);
-  const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [completedExpanded, setCompletedExpanded] = useState(true);
 
   const activeTodos = todos.filter((todo) => !todo.completed);
   const completedTodos = todos.filter((todo) => todo.completed);
@@ -143,7 +143,6 @@ export default function HomeScreen() {
                   >
                     <View style={styles.checkbox} />
                   </Pressable>
-
                   <Pressable
                     style={styles.titlePressable}
                     onPress={() => openTodo(todo.id)}
@@ -152,6 +151,12 @@ export default function HomeScreen() {
                     testID="todo-row"
                   >
                     <Text style={styles.taskTitle}>{todo.title}</Text>
+                    <Text
+                      style={styles.todoStatus}
+                      testID="todo-status"
+                    >
+                      Ej genomförd
+                    </Text>
                   </Pressable>
                 </View>
               ))}
@@ -211,8 +216,10 @@ export default function HomeScreen() {
                   onPress={() => openTodo(todo.id)}
                   accessibilityRole="button"
                   accessibilityLabel={`Visa ${todo.title}`}
+                  testID="todo-row"
                 >
                   <Text style={[styles.taskTitle, styles.completedText]}>{todo.title}</Text>
+                  <Text testID="todo-status">Genomförd</Text>
                 </Pressable>
               </View>
             )}
@@ -312,7 +319,9 @@ const styles = StyleSheet.create({
   titlePressable: {
     flex: 1,
     minHeight: 46,
-    justifyContent: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   checkbox: {
     width: 20,
@@ -360,5 +369,18 @@ const styles = StyleSheet.create({
   },
   completedList: {
     maxHeight: 250,
+  },
+  todoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  todoTitle: {
+    flex: 1,
+  },
+
+  todoStatus: {
+    marginLeft: 12,
   },
 });
